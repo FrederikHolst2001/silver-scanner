@@ -1,29 +1,44 @@
-
-import requests, re
+import requests
 from bs4 import BeautifulSoup
+import re
 
 def scrape_dba_live():
-    url="https://www.dba.dk/soeg/?soeg=925+sølv"
-    deals=[]
-    try:
-        html=requests.get(url,timeout=10).text
-        soup=BeautifulSoup(html,"lxml")
 
-        for a in soup.find_all("a",href=True):
-            text=a.get_text(" ").strip()
+    url = "https://www.dba.dk/soeg/?soeg=925+sølv"
 
-            price_match=re.search(r'(\d+[.,]?\d*)\s?kr',text.lower())
-            weight_match=re.search(r'(\d+[.,]?\d*)\s?g',text.lower())
+    headers = {
+        "User-Agent":
+        "Mozilla/5.0"
+    }
 
-            if price_match and weight_match:
+    html = requests.get(url, headers=headers).text
 
-                deals.append({
-                    "title":text,
-                    "price":float(price_match.group(1).replace(",",".")),
-                    "link":"https://www.dba.dk"+a["href"]
-                })
+    soup = BeautifulSoup(html, "lxml")
 
-    except Exception as e:
-        print("DBA scrape error:",e)
+    deals = []
+
+    for a in soup.find_all("a", href=True):
+
+        text = a.get_text(" ").lower()
+
+        if len(text) > 200:
+            continue
+
+        price = re.search(r'(\d+)\s?kr', text)
+        weight = re.search(r'(\d+)\s?g', text)
+
+        if price and weight:
+
+            deals.append({
+
+                "title": text,
+
+                "price": float(price.group(1)),
+
+                "link": "https://www.dba.dk" + a["href"]
+
+            })
+
+    print("DBA valid deals:", len(deals))
 
     return deals
