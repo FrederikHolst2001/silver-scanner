@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Silver Profit Scanner Dashboard</title>
+
+<style>
+
+body {
+    font-family: Arial;
+    background: #0f172a;
+    color: white;
+    margin: 20px;
+}
+
+h1 {
+    margin-bottom: 10px;
+}
+
+#status {
+    margin-bottom: 15px;
+    font-weight: bold;
+    color: #94a3b8;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    background: #1e293b;
+}
+
+th, td {
+    padding: 10px;
+    border-bottom: 1px solid #334155;
+}
+
+th {
+    text-align: left;
+    background: #020617;
+}
+
+tr:hover {
+    background: #334155;
+}
+
+.score {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: bold;
+}
+
+.score-high {
+    background: #16a34a;
+}
+
+.score-medium {
+    background: #eab308;
+    color: black;
+}
+
+.score-low {
+    background: #dc2626;
+}
+
+.profit {
+    font-weight: bold;
+}
+
+.link {
+    color: #38bdf8;
+    text-decoration: none;
+}
+
+.link:hover {
+    text-decoration: underline;
+}
+
+</style>
+
+</head>
+<body>
+
+<h1>Silver Profit Scanner Dashboard</h1>
+
+<div id="status">Indlæser...</div>
+
+<table id="table">
+<thead>
+<tr>
+<th>Titel</th>
+<th>Profit</th>
+<th>Score</th>
+<th>Link</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+<script>
+
+const API = "/api/deals";
+
+function getScoreClass(score) {
+
+    if (score >= 80) return "score score-high";
+    if (score >= 40) return "score score-medium";
+    return "score score-low";
+}
+
+function updateDashboard() {
+
+    fetch(API)
+    .then(r => r.json())
+    .then(data => {
+
+        const tbody = document.querySelector("tbody");
+        const status = document.getElementById("status");
+
+        tbody.innerHTML = "";
+
+        if (!data || data.length === 0) {
+
+            status.innerText = "Ingen fund lige nu";
+
+            return;
+        }
+
+        status.innerText =
+            "Sidst opdateret: " +
+            new Date().toLocaleTimeString();
+
+        data.forEach(deal => {
+
+            const title = deal[0];
+            const price = deal[1];
+            const profit = deal[2];
+            const score = deal[3];
+            const link = deal[4];
+
+            const row = document.createElement("tr");
+
+            row.innerHTML = `
+                <td>${title}</td>
+                <td class="profit">${profit} kr</td>
+                <td>
+                    <span class="${getScoreClass(score)}">
+                        ${score}
+                    </span>
+                </td>
+                <td>
+                    <a href="${link}" target="_blank" class="link">
+                        Se annonce
+                    </a>
+                </td>
+            `;
+
+            tbody.appendChild(row);
+
+        });
+
+    })
+    .catch(() => {
+
+        document.getElementById("status")
+            .innerText = "Fejl ved indlæsning";
+
+    });
+
+}
+
+updateDashboard();
+
+// Auto update hvert 10 sek
+setInterval(updateDashboard, 10000);
+
+</script>
+
+</body>
+</html>
