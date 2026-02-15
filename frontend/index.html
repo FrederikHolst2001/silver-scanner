@@ -1,0 +1,33 @@
+
+<html>
+<body>
+<h2>Silver Profit Scanner (Cloud)</h2>
+<table border="1" id="table">
+<tr>
+<th>Titel</th>
+<th>Profit</th>
+<th>Kilde</th>
+<th>Link</th>
+</tr>
+</table>
+
+<script>
+fetch("/api/deals")
+.then(r=>r.json())
+.then(data=>{
+let table=document.getElementById("table")
+data.forEach(d=>{
+let row=table.insertRow()
+row.insertCell().innerText=d[0]
+row.insertCell().innerText=d[1]+" kr"
+row.insertCell().innerText=d[2]
+let link=document.createElement("a")
+link.href=d[3]
+link.innerText="Åbn"
+row.insertCell().appendChild(link)
+})
+})
+</script>
+
+</body>
+</html>
