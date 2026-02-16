@@ -23,6 +23,15 @@ def scrape_dba():
         links = soup.find_all("a", href=True)
 
         for link in links:
+            
+            SILVER_KEYWORDS = [
+                "sølv",
+                "silver",
+                "925",
+                "sterling",
+                "830",
+                "835"
+            ]
 
             text = link.get_text(" ").strip().lower()
 
