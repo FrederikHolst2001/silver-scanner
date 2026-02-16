@@ -1,44 +1,54 @@
 import requests
-from bs4 import BeautifulSoup
-import re
 
 def scrape_dba_live():
 
-    url = "https://www.dba.dk/soeg/?soeg=925+sølv"
+    url = "https://api.dba.dk/api/search"
 
-    headers = {
-        "User-Agent":
-        "Mozilla/5.0"
+    params = {
+
+        "q": "925 sølv",
+        "page": 1,
+        "limit": 50
+
     }
 
-    html = requests.get(url, headers=headers).text
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
 
-    soup = BeautifulSoup(html, "lxml")
+    try:
 
-    deals = []
+        response = requests.get(
+            url,
+            params=params,
+            headers=headers,
+            timeout=10
+        )
 
-    for a in soup.find_all("a", href=True):
+        data = response.json()
 
-        text = a.get_text(" ").lower()
+        deals = []
 
-        if len(text) > 200:
-            continue
+        for item in data.get("items", []):
 
-        price = re.search(r'(\d+)\s?kr', text)
-        weight = re.search(r'(\d+)\s?g', text)
-
-        if price and weight:
+            title = item.get("title", "")
+            price = item.get("price", 0)
+            link = "https://www.dba.dk" + item.get("url", "")
 
             deals.append({
 
-                "title": text,
-
-                "price": float(price.group(1)),
-
-                "link": "https://www.dba.dk" + a["href"]
+                "title": title,
+                "price": float(price),
+                "link": link
 
             })
 
-    print("DBA valid deals:", len(deals))
+        print("DBA JSON deals found:", len(deals))
 
-    return deals
+        return deals
+
+    except Exception as e:
+
+        print("DBA API error:", e)
+
+        return []
