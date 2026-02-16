@@ -4,9 +4,17 @@ import re
 
 BASE = "https://www.guloggratis.dk"
 
-def scrape_guloggratis():
+SILVER_KEYWORDS = [
+    "sølv",
+    "925",
+    "sterling",
+    "830",
+    "835"
+]
 
-    url = "https://www.guloggratis.dk/soeg?q=925 sølv"
+SEARCH_URL = "https://www.guloggratis.dk/soeg?q=925 sølv"
+
+def scrape_guloggratis():
 
     headers = {
         "User-Agent": "Mozilla/5.0"
@@ -16,26 +24,17 @@ def scrape_guloggratis():
 
     try:
 
-        r = requests.get(url, headers=headers, timeout=15)
+        r = requests.get(SEARCH_URL, headers=headers, timeout=15)
 
         soup = BeautifulSoup(r.text, "lxml")
 
-        links = soup.find_all("a", href=True)
+        listings = soup.find_all("article")
 
-        for link in links:
+        for item in listings:
 
-            SILVER_KEYWORDS = [
-                "sølv",
-                "silver",
-                "925",
-                "sterling",
-                "830",
-                "835"
-            ]
+            text = item.get_text(" ").lower()
 
-            text = link.get_text(" ").strip().lower()
-
-            if len(text) < 10 or len(text) > 200:
+            if not any(word in text for word in SILVER_KEYWORDS):
                 continue
 
             price_match = re.search(r'(\d+(?:[.,]\d+)?)\s?kr', text)
@@ -46,21 +45,30 @@ def scrape_guloggratis():
 
             price = float(price_match.group(1).replace(",", "."))
 
-            href = link["href"]
+            link_tag = item.find("a", href=True)
 
-            if not href.startswith("http"):
-                href = BASE + href
+            if not link_tag:
+                continue
+
+            link = link_tag["href"]
+
+            if not link.startswith("http"):
+                link = BASE + link
+
+            title = link_tag.get_text().strip()
 
             deals.append({
-                "title": text,
+
+                "title": title,
                 "price": price,
-                "link": href
+                "link": link
+
             })
 
-        print("GulogGratis deals found:", len(deals))
+        print("GG silver deals:", len(deals))
 
     except Exception as e:
 
-        print("GulogGratis error:", e)
+        print("GG error:", e)
 
     return deals
