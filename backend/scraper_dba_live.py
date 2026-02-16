@@ -1,5 +1,4 @@
-from playwright.sync_api import sync_playwright
-import re
+import requests
 
 def scrape_dba_live():
 
@@ -7,58 +6,54 @@ def scrape_dba_live():
 
     try:
 
-        with sync_playwright() as p:
+        url = "https://www.dba.dk/soeg/"
 
-            browser = p.chromium.launch(
-                headless=True,
-                args=[
-                    "--no-sandbox",
-                    "--disable-setuid-sandbox",
-                    "--disable-dev-shm-usage",
-                    "--disable-gpu"
-                ]
-            )
+        params = {
+            "soeg": "925 sølv"
+        }
 
-            page = browser.new_page()
+        headers = {
+            "User-Agent": "Mozilla/5.0"
+        }
 
-            page.goto(
-                "https://www.dba.dk/soeg/?soeg=925+sølv",
-                timeout=60000
-            )
+        response = requests.get(
+            url,
+            params=params,
+            headers=headers,
+            timeout=10
+        )
 
-            page.wait_for_timeout(5000)
+        html = response.text
 
-            content = page.content()
-
-            browser.close()
-
-        lines = content.split("\n")
+        lines = html.split("\n")
 
         for line in lines:
 
-            line = line.lower()
+            if "kr" in line and "g" in line:
 
-            price = re.search(r'(\d+)\s?kr', line)
-            weight = re.search(r'(\d+)\s?g', line)
+                import re
 
-            if price and weight and len(line) < 200:
+                price = re.search(r'(\d+)\s?kr', line.lower())
+                weight = re.search(r'(\d+)\s?g', line.lower())
 
-                deals.append({
+                if price and weight:
 
-                    "title": line.strip(),
+                    deals.append({
 
-                    "price": float(price.group(1)),
+                        "title": line.strip(),
 
-                    "link": "https://www.dba.dk"
+                        "price": float(price.group(1)),
 
-                })
+                        "link": "https://www.dba.dk"
 
-        print("DBA deals found:", len(deals))
+                    })
+
+        print("DBA deals:", len(deals))
 
         return deals
 
     except Exception as e:
 
-        print("Playwright error:", e)
+        print("DBA error:", e)
 
         return []
