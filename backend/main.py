@@ -4,6 +4,8 @@ sys.path.append(os.path.dirname(__file__))
 
 from flask import Flask, jsonify, send_from_directory
 
+from scraper_dba import scrape_dba
+from scraper_guloggratis import scrape_guloggratis
 from scraper_dba_live import scrape_dba_live
 from scraper_guloggratis_live import scrape_guloggratis_live
 from scraper_facebook_live import scrape_facebook_live
@@ -54,9 +56,8 @@ def scanner():
 
             deals = []
 
-            deals.extend(scrape_dba_live())
-            deals.extend(scrape_guloggratis_live())
-            deals.extend(scrape_facebook_live())
+            deals.extend(scrape_dba())
+            deals.extend(scrape_guloggratis())
 
             for deal in deals:
 
@@ -71,15 +72,17 @@ def scanner():
 
                     save_deal(deal)
 
-                    send_alert(
-                        f"Profit {deal['profit']} kr\n{deal['title']}"
+                    print(
+                        "PROFIT:",
+                        deal["profit"],
+                        deal["title"]
                     )
 
         except Exception as e:
 
             print("Scanner error:", e)
 
-        time.sleep(SCAN_INTERVAL)
+        time.sleep(60)
 
 
 threading.Thread(target=scanner, daemon=True).start()
