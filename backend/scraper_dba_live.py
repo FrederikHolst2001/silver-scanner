@@ -1,54 +1,43 @@
-import requests
+from playwright.sync_api import sync_playwright
+import re
 
 def scrape_dba_live():
 
-    url = "https://api.dba.dk/api/search"
+    deals = []
 
-    params = {
+    with sync_playwright() as p:
 
-        "q": "925 sølv",
-        "page": 1,
-        "limit": 50
+        browser = p.chromium.launch(headless=True)
 
-    }
+        page = browser.new_page()
 
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
-
-    try:
-
-        response = requests.get(
-            url,
-            params=params,
-            headers=headers,
-            timeout=10
+        page.goto(
+            "https://www.dba.dk/soeg/?soeg=925+sølv"
         )
 
-        data = response.json()
+        page.wait_for_timeout(3000)
 
-        deals = []
+        content = page.content()
 
-        for item in data.get("items", []):
+        browser.close()
 
-            title = item.get("title", "")
-            price = item.get("price", 0)
-            link = "https://www.dba.dk" + item.get("url", "")
+    lines = content.split("\n")
+
+    for line in lines:
+
+        price = re.search(r'(\d+)\s?kr', line.lower())
+        weight = re.search(r'(\d+)\s?g', line.lower())
+
+        if price and weight:
 
             deals.append({
 
-                "title": title,
-                "price": float(price),
-                "link": link
+                "title": line.strip(),
+                "price": float(price.group(1)),
+                "link": "https://www.dba.dk"
 
             })
 
-        print("DBA JSON deals found:", len(deals))
+    print("DBA playwright deals:", len(deals))
 
-        return deals
-
-    except Exception as e:
-
-        print("DBA API error:", e)
-
-        return []
+    return deals
