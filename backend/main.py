@@ -55,6 +55,7 @@ def scanner():
             deals = []
 
             deals.extend(scrape_dba_live())
+            deals.extend(scrape_guloggratis_live())
             deals.extend(scrape_facebook_live())
 
             for deal in deals:
