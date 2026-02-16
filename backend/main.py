@@ -30,8 +30,8 @@ def api_deals():
 @app.route("/api/debug")
 def debug():
 
-    dba = scrape_dba_live()
-    gg = scrape_guloggratis_live()
+    dba = scrape_dba()
+    gg = scrape_guloggratis()
 
     return {
         "dba_found": len(dba),
