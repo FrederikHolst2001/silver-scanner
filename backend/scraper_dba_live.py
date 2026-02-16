@@ -5,39 +5,60 @@ def scrape_dba_live():
 
     deals = []
 
-    with sync_playwright() as p:
+    try:
 
-        browser = p.chromium.launch(headless=True)
+        with sync_playwright() as p:
 
-        page = browser.new_page()
+            browser = p.chromium.launch(
+                headless=True,
+                args=[
+                    "--no-sandbox",
+                    "--disable-setuid-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-gpu"
+                ]
+            )
 
-        page.goto(
-            "https://www.dba.dk/soeg/?soeg=925+sølv"
-        )
+            page = browser.new_page()
 
-        page.wait_for_timeout(3000)
+            page.goto(
+                "https://www.dba.dk/soeg/?soeg=925+sølv",
+                timeout=60000
+            )
 
-        content = page.content()
+            page.wait_for_timeout(5000)
 
-        browser.close()
+            content = page.content()
 
-    lines = content.split("\n")
+            browser.close()
 
-    for line in lines:
+        lines = content.split("\n")
 
-        price = re.search(r'(\d+)\s?kr', line.lower())
-        weight = re.search(r'(\d+)\s?g', line.lower())
+        for line in lines:
 
-        if price and weight:
+            line = line.lower()
 
-            deals.append({
+            price = re.search(r'(\d+)\s?kr', line)
+            weight = re.search(r'(\d+)\s?g', line)
 
-                "title": line.strip(),
-                "price": float(price.group(1)),
-                "link": "https://www.dba.dk"
+            if price and weight and len(line) < 200:
 
-            })
+                deals.append({
 
-    print("DBA playwright deals:", len(deals))
+                    "title": line.strip(),
 
-    return deals
+                    "price": float(price.group(1)),
+
+                    "link": "https://www.dba.dk"
+
+                })
+
+        print("DBA deals found:", len(deals))
+
+        return deals
+
+    except Exception as e:
+
+        print("Playwright error:", e)
+
+        return []
