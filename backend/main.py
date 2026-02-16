@@ -5,6 +5,7 @@ sys.path.append(os.path.dirname(__file__))
 from flask import Flask, jsonify, send_from_directory
 
 from scraper_dba_live import scrape_dba_live
+from scraper_guloggratis_live import scrape_guloggratis_live
 from scraper_facebook_live import scrape_facebook_live
 from signal_engine import calculate_profit, profit_score
 from db import init_db, save_deal, get_deals
