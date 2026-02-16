@@ -24,6 +24,20 @@ def api_deals():
     return jsonify(get_deals())
 
 
+@app.route("/api/debug")
+def debug():
+
+    dba = scrape_dba_live()
+    gg = scrape_guloggratis_live()
+
+    return {
+        "dba_found": len(dba),
+        "guloggratis_found": len(gg),
+        "dba": dba[:3],
+        "gg": gg[:3]
+    }
+
+
 # DASHBOARD endpoint (forside)
 @app.route("/")
 def dashboard():
