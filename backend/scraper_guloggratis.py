@@ -24,6 +24,15 @@ def scrape_guloggratis():
 
         for link in links:
 
+            SILVER_KEYWORDS = [
+                "sølv",
+                "silver",
+                "925",
+                "sterling",
+                "830",
+                "835"
+            ]
+
             text = link.get_text(" ").strip().lower()
 
             if len(text) < 10 or len(text) > 200:
