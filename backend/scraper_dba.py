@@ -4,9 +4,17 @@ import re
 
 BASE = "https://www.dba.dk"
 
-def scrape_dba():
+SILVER_KEYWORDS = [
+    "sølv",
+    "925",
+    "sterling",
+    "830",
+    "835"
+]
 
-    url = "https://www.dba.dk/soeg/?soeg=925 sølv"
+SEARCH_URL = "https://www.dba.dk/soeg/?soeg=925 sølv"
+
+def scrape_dba():
 
     headers = {
         "User-Agent": "Mozilla/5.0"
@@ -16,26 +24,19 @@ def scrape_dba():
 
     try:
 
-        r = requests.get(url, headers=headers, timeout=15)
+        r = requests.get(SEARCH_URL, headers=headers, timeout=15)
 
         soup = BeautifulSoup(r.text, "lxml")
 
-        links = soup.find_all("a", href=True)
+        # DBA listings ligger i article tags
+        listings = soup.find_all("article")
 
-        for link in links:
-            
-            SILVER_KEYWORDS = [
-                "sølv",
-                "silver",
-                "925",
-                "sterling",
-                "830",
-                "835"
-            ]
+        for item in listings:
 
-            text = link.get_text(" ").strip().lower()
+            text = item.get_text(" ").lower()
 
-            if len(text) < 10 or len(text) > 200:
+            # kun sølv
+            if not any(word in text for word in SILVER_KEYWORDS):
                 continue
 
             price_match = re.search(r'(\d+(?:[.,]\d+)?)\s?kr', text)
@@ -46,18 +47,27 @@ def scrape_dba():
 
             price = float(price_match.group(1).replace(",", "."))
 
-            href = link["href"]
+            link_tag = item.find("a", href=True)
 
-            if not href.startswith("http"):
-                href = BASE + href
+            if not link_tag:
+                continue
+
+            link = link_tag["href"]
+
+            if not link.startswith("http"):
+                link = BASE + link
+
+            title = link_tag.get_text().strip()
 
             deals.append({
-                "title": text,
+
+                "title": title,
                 "price": price,
-                "link": href
+                "link": link
+
             })
 
-        print("DBA deals found:", len(deals))
+        print("DBA silver deals:", len(deals))
 
     except Exception as e:
 
