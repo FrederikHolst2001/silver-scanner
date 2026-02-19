@@ -1,76 +1,93 @@
 import requests
 from bs4 import BeautifulSoup
 import re
+import time
 
 BASE = "https://www.dba.dk"
 
-SILVER_KEYWORDS = [
-    "sølv",
-    "925",
-    "sterling",
-    "830",
-    "835"
-]
+SILVER_KEYWORDS = ["sølv", "925", "sterling"]
 
-SEARCH_URL = "https://www.dba.dk/soeg/?soeg=925 sølv"
+HEADERS = {
+    "User-Agent": "Mozilla/5.0"
+}
 
-def scrape_dba():
 
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
-
-    deals = []
+def extract_weight(url):
 
     try:
 
-        r = requests.get(SEARCH_URL, headers=headers, timeout=15)
+        r = requests.get(url, headers=HEADERS, timeout=10)
 
         soup = BeautifulSoup(r.text, "lxml")
 
-        # DBA listings ligger i article tags
-        listings = soup.find_all("article")
+        text = soup.get_text(" ").lower()
 
-        for item in listings:
+        match = re.search(r'(\d+(?:[.,]\d+)?)\s?g', text)
 
-            text = item.get_text(" ").lower()
+        if match:
+            return float(match.group(1).replace(",", "."))
 
-            # kun sølv
-            if not any(word in text for word in SILVER_KEYWORDS):
-                continue
+    except:
+        pass
 
-            price_match = re.search(r'(\d+(?:[.,]\d+)?)\s?kr', text)
-            weight_match = re.search(r'(\d+(?:[.,]\d+)?)\s?g', text)
+    return None
 
-            if not price_match or not weight_match:
-                continue
 
-            price = float(price_match.group(1).replace(",", "."))
+def scrape_dba():
 
-            link_tag = item.find("a", href=True)
+    search_url = "https://www.dba.dk/soeg/?soeg=925 sølv"
 
-            if not link_tag:
-                continue
+    deals = []
 
-            link = link_tag["href"]
+    r = requests.get(search_url, headers=HEADERS)
 
-            if not link.startswith("http"):
-                link = BASE + link
+    soup = BeautifulSoup(r.text, "lxml")
 
-            title = link_tag.get_text().strip()
+    listings = soup.find_all("a", href=True)
 
-            deals.append({
+    checked = 0
 
-                "title": title,
-                "price": price,
-                "link": link
+    for link in listings:
 
-            })
+        title = link.get_text().lower().strip()
 
-        print("DBA silver deals:", len(deals))
+        if not any(k in title for k in SILVER_KEYWORDS):
+            continue
 
-    except Exception as e:
+        href = link["href"]
 
-        print("DBA error:", e)
+        if "/annonce/" not in href:
+            continue
+
+        url = BASE + href
+
+        price_match = re.search(r'(\d+)\s?kr', title)
+
+        if not price_match:
+            continue
+
+        price = float(price_match.group(1))
+
+        # 🔥 hent vægt fra annonce
+        weight = extract_weight(url)
+
+        if not weight:
+            continue
+
+        deals.append({
+            "title": title,
+            "price": price,
+            "weight": weight,
+            "link": url
+        })
+
+        checked += 1
+
+        time.sleep(1)  # undgå blokering
+
+        if checked > 10:
+            break
+
+    print("REAL DBA deals:", len(deals))
 
     return deals
